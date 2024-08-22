@@ -1,0 +1,83 @@
+import heapq
+from collections import defaultdict
+
+# Node class for the Huffman tree
+class HuffmanTreeNode:
+    def __init__(self, symbol, frequency):
+        self.symbol = symbol
+        self.frequency = frequency
+        self.left_child = None
+        self.right_child = None
+
+    # Comparator method to compare nodes based on frequency
+    def __lt__(self, other):
+        return self.frequency < other.frequency
+
+# Function to construct the Huffman tree
+def construct_huffman_tree(freq_map):
+    priority_queue = [HuffmanTreeNode(sym, freq) for sym, freq in freq_map.items()]
+    heapq.heapify(priority_queue)
+
+    while len(priority_queue) > 1:
+        first_node = heapq.heappop(priority_queue)
+        second_node = heapq.heappop(priority_queue)
+        combined_node = HuffmanTreeNode(None, first_node.frequency + second_node.frequency)
+        combined_node.left_child = first_node
+        combined_node.right_child = second_node
+        heapq.heappush(priority_queue, combined_node)
+
+    return priority_queue[0]  # The root node of the tree
+
+# Function to create the Huffman codes from the tree
+def create_huffman_codes(tree_node, current_code="", code_map={}):
+    if tree_node is None:
+        return
+
+    if tree_node.symbol is not None:  # Leaf node condition
+        code_map[tree_node.symbol] = current_code
+    create_huffman_codes(tree_node.left_child, current_code + "0", code_map)
+    create_huffman_codes(tree_node.right_child, current_code + "1", code_map)
+
+    return code_map
+
+# Function to encode a given string using Huffman coding
+def encode_with_huffman(input_text):
+    if not input_text:
+        return "", None
+
+    # Step 1: Determine the frequency of each character
+    frequency_map = defaultdict(int)
+    for ch in input_text:
+        frequency_map[ch] += 1
+
+    # Step 2: Build the Huffman tree
+    root_node = construct_huffman_tree(frequency_map)
+
+    # Step 3: Generate the Huffman codes from the tree
+    huffman_code_map = create_huffman_codes(root_node)
+
+    # Step 4: Encode the input text using the generated codes
+    encoded_output = ''.join(huffman_code_map[ch] for ch in input_text)
+
+    return encoded_output, root_node
+
+# Function to decode a Huffman-encoded string using the Huffman tree
+def decode_with_huffman(encoded_text, huffman_tree):
+    decoded_output = []
+    current_node = huffman_tree
+    for bit in encoded_text:
+        current_node = current_node.left_child if bit == "0" else current_node.right_child
+        if current_node.left_child is None and current_node.right_child is None:  # Leaf node condition
+            decoded_output.append(current_node.symbol)
+            current_node = huffman_tree  # Return to the root node
+
+    return ''.join(decoded_output)
+
+# Example usage:
+if __name__ == "__main__":
+    input_text = "hello huffman"
+    encoded_output, huffman_tree = encode_with_huffman(input_text)
+    print(f"Encoded text: {encoded_output}")
+    
+    decoded_output = decode_with_huffman(encoded_output, huffman_tree)
+    print(f"Decoded text: {decoded_output}")
